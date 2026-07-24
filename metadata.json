@@ -1,0 +1,8 @@
+{
+  "name": "Sync Beats",
+  "description": "Real-time audio synchronization and room management using Socket.IO and Redis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
