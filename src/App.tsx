@@ -7,9 +7,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Play, Pause, MessageSquare, Activity, Shield, Users, 
   Clock, Terminal, Heart, Star, Zap, Music, Check, X, AlertCircle,
-  Wifi, WifiOff, Sliders, Share2, Copy
+  Wifi, WifiOff, Sliders, Share2, Copy, ArrowLeft, Radio, HelpCircle, Sparkles, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { HomePage } from './components/HomePage';
+import { StudioWorkflow, PRESET_TEMPLATES, PresetTemplate } from './components/StudioWorkflow';
+import { SyncBeatsLogo, SyncBeatsIcon } from './components/SyncBeatsLogo';
 
 // --- Tipos e Interfaces ---
 interface Reaction {
@@ -60,6 +63,8 @@ const INITIAL_STATE: ServerState = {
 };
 
 export default function App() {
+  const [currentView, setCurrentView] = useState<'home' | 'studio'>('home');
+  const [activeTemplateId, setActiveTemplateId] = useState<string>('radio-fm');
   const [serverState, setServerState] = useState<ServerState>(INITIAL_STATE);
   const [logs, setLogs] = useState<string[]>([]);
   const [latency, setLatency] = useState<number>(50); // Chaos Slider value
@@ -79,6 +84,56 @@ export default function App() {
       });
     }, latency / 2);
   }, [latency, addLog]);
+
+  const handleSelectTemplate = (template: PresetTemplate) => {
+    setActiveTemplateId(template.id);
+    updateServer(prev => ({
+      ...prev,
+      currentTrack: template.track,
+      status: 'paused',
+      startTime: null,
+      seekPosition: 0,
+    }), `Template alterado: ${template.name}`);
+  };
+
+  const handleRunAutoDemo = () => {
+    addLog('🤖 Iniciando Demonstração Didática Automática...');
+    
+    // 1. Play
+    const now = Date.now();
+    updateServer(prev => ({ ...prev, status: 'playing', startTime: now }), '🤖 [Demo 1/5] Host deu Play no áudio');
+
+    // 2. Emoji Reaction
+    setTimeout(() => {
+      const newReaction: Reaction = {
+        id: Math.random().toString(36),
+        emoji: '🔥',
+        x: 50,
+        y: 0,
+        timestamp: Date.now(),
+      };
+      updateServer(prev => ({ ...prev, reactions: [...prev.reactions, newReaction] }), '🤖 [Demo 2/5] Reação "🔥" emitida pelo Ouvinte');
+    }, 2000);
+
+    // 3. Listener Chat
+    setTimeout(() => {
+      updateServer(prev => ({
+        ...prev,
+        messages: [...prev.messages, { id: Math.random().toString(36), user: 'Ouvinte_Demo', text: 'Sombrio demais! O som tá 100% afinado aqui!', time: Date.now() }],
+      }), '🤖 [Demo 3/5] Mensagem de chat recebida');
+    }, 4500);
+
+    // 4. Inject Latency
+    setTimeout(() => {
+      setLatency(350);
+      addLog('🤖 [Demo 4/5] Latência de rede alterada para 350ms (simulação de 4G instável)');
+    }, 7000);
+
+    // 5. Success
+    setTimeout(() => {
+      addLog('✅ [Demo 5/5] Teste concluído com sucesso! Repare que o áudio continuou perfeito.');
+    }, 9500);
+  };
 
   const handleHostPlay = () => {
     const now = Date.now();
@@ -182,54 +237,84 @@ export default function App() {
     };
   }, [serverState, handleHostPlay, handleHostPause]);
 
+  if (currentView === 'home') {
+    return <HomePage onOpenStudio={() => setCurrentView('studio')} />;
+  }
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-[#080808] text-zinc-100 font-sans selection:bg-[#FF921C]/30">
       {/* Header */}
-      <header className="h-16 border-b border-zinc-800 flex items-center justify-between px-6 bg-zinc-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
-            <Activity className="w-5 h-5 text-white" />
+      <header className="h-16 border-b border-zinc-800/80 flex items-center justify-between px-6 bg-[#121214]/90 backdrop-blur-md sticky top-0 z-50">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setCurrentView('home')}
+            className="flex items-center gap-2 px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-200 font-bold uppercase transition-colors cursor-pointer"
+            title="Voltar para Apresentação Comercial"
+          >
+            <ArrowLeft className="w-4 h-4 text-[#FF921C]" />
+            <span className="hidden sm:inline">Voltar para Apresentação Comercial</span>
+          </button>
+
+          <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
+
+          <div className="flex items-center gap-3">
+            <SyncBeatsLogo size="sm" showBetasBadge={true} onClick={() => setCurrentView('home')} />
+            <span className="hidden md:inline px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">
+              STUDIO DEMO
+            </span>
           </div>
-          <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
-            Sync Beats <span className="text-xs font-medium text-indigo-400 ml-1 uppercase tracking-widest">Senac Tech Demo</span>
-          </h1>
         </div>
-        <div className="flex items-center gap-6">
-          <div className="hidden md:flex items-center gap-4 text-xs font-mono text-zinc-500">
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${latency > 300 ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-zinc-800 bg-zinc-800/50'}`}>
-              {latency > 300 ? <WifiOff className="w-3 h-3" /> : <Wifi className="w-3 h-3" />}
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 text-xs font-mono text-zinc-500">
+            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${latency > 300 ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-zinc-800 bg-zinc-800/50 text-zinc-300'}`}>
+              {latency > 300 ? <WifiOff className="w-3 h-3 text-red-400" /> : <Wifi className="w-3 h-3 text-[#FF921C]" />}
               <span>LATENCY: {latency}ms</span>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
-        {/* Lado do Host */}
-        <AppView 
-          title="Host (Controlador)" 
-          role="host" 
-          serverState={serverState} 
+      <main className="p-6 max-w-7xl mx-auto">
+        {/* Componente Didático de Guia & Templates */}
+        <StudioWorkflow
+          serverStatus={serverState.status}
+          startTime={serverState.startTime}
+          seekPosition={serverState.seekPosition}
           latency={latency}
-          onPlay={handleHostPlay}
-          onPause={handleHostPause}
-          onSendMessage={(txt) => handleSendMessage('Host', txt)}
-          onReaction={handleReaction}
-          onApproveSuggestion={handleApproveSuggestion}
-          icon={<Shield className="w-5 h-5 text-indigo-400" />}
+          activeTemplateId={activeTemplateId}
+          onSelectTemplate={handleSelectTemplate}
+          onRunAutoDemo={handleRunAutoDemo}
         />
 
-        {/* Lado do Ouvinte */}
-        <AppView 
-          title="Ouvinte (Sincronizado)" 
-          role="listener" 
-          serverState={serverState} 
-          latency={latency}
-          onSendMessage={(txt) => handleSendMessage('Ouvinte', txt)}
-          onReaction={handleReaction}
-          onSuggest={handleSuggest}
-          icon={<Users className="w-5 h-5 text-emerald-400" />}
-        />
+        {/* Simulador Lado a Lado (Host x Ouvinte) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Lado do Host */}
+          <AppView 
+            title="Host (Controlador Mestre)" 
+            role="host" 
+            serverState={serverState} 
+            latency={latency}
+            onPlay={handleHostPlay}
+            onPause={handleHostPause}
+            onSendMessage={(txt) => handleSendMessage('Host', txt)}
+            onReaction={handleReaction}
+            onApproveSuggestion={handleApproveSuggestion}
+            icon={<Shield className="w-5 h-5 text-[#FF921C]" />}
+          />
+
+          {/* Lado do Ouvinte */}
+          <AppView 
+            title="Ouvinte (Nó Sincronizado)" 
+            role="listener" 
+            serverState={serverState} 
+            latency={latency}
+            onSendMessage={(txt) => handleSendMessage('Ouvinte', txt)}
+            onReaction={handleReaction}
+            onSuggest={handleSuggest}
+            icon={<Users className="w-5 h-5 text-emerald-400" />}
+          />
+        </div>
       </main>
 
       {/* Debug & Chaos Panel */}
@@ -371,11 +456,11 @@ function AppView({
       {/* App Header */}
       <div className="p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-800/20 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl ${role === 'host' ? 'bg-indigo-500/10' : 'bg-emerald-500/10'}`}>
+          <div className={`p-2 rounded-xl ${role === 'host' ? 'bg-[#FF921C]/15 text-[#FF921C]' : 'bg-emerald-500/10'}`}>
             {icon}
           </div>
           <div>
-            <span className="font-bold text-sm block leading-none mb-1">{title}</span>
+            <span className="font-bold text-sm block leading-none mb-1 text-white uppercase">{title}</span>
             <span className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">
               {role === 'host' ? 'Master Controller' : 'Sync Node #42'}
             </span>
@@ -384,35 +469,59 @@ function AppView({
         {role === 'listener' && (
           <button 
             onClick={() => setIsSuggesting(true)}
-            className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg transition-all active:scale-95"
+            className="p-2 bg-zinc-800 hover:bg-zinc-700 rounded transition-all active:scale-95 flex items-center gap-1.5 text-xs text-emerald-400 font-bold uppercase cursor-pointer"
             title="Sugerir Música"
           >
             <Music className="w-4 h-4 text-emerald-400" />
+            <span className="hidden sm:inline">Sugerir Música</span>
           </button>
         )}
       </div>
 
+      {/* Didactic Banner per Role */}
+      {role === 'host' ? (
+        <div className="px-5 py-2 bg-[#FF921C]/10 border-b border-[#FF921C]/20 text-[11px] text-zinc-200 flex items-center justify-between font-sans">
+          <span className="flex items-center gap-1.5">
+            👑 <span><strong>Controlador Mestre:</strong> Dê Play/Pause para transmitir o sinal a todos.</span>
+          </span>
+          <span className="font-mono text-[9px] bg-[#FF921C]/20 px-2 py-0.5 rounded text-[#FF921C] font-bold uppercase">
+            Emissor
+          </span>
+        </div>
+      ) : (
+        <div className="px-5 py-2 bg-emerald-950/40 border-b border-emerald-500/20 text-[11px] text-zinc-200 flex items-center justify-between font-sans">
+          <span className="flex items-center gap-1.5">
+            🎧 <span><strong>Ouvinte Receptor:</strong> Seu player compensa o tempo e reproduz sem descompasso.</span>
+          </span>
+          <span className="font-mono text-[9px] bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-300 font-bold uppercase">
+            Compensador
+          </span>
+        </div>
+      )}
+
       {/* Player Section */}
       <div className="p-8 flex flex-col items-center text-center flex-shrink-0 bg-gradient-to-b from-zinc-800/10 to-transparent">
-        <div className="w-44 h-44 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 rounded-[2.5rem] mb-6 shadow-2xl shadow-indigo-500/20 flex items-center justify-center relative group overflow-hidden">
-          <Activity className="w-20 h-20 text-white/10 absolute" />
-          <div className="z-10 text-white font-black text-5xl tracking-tighter">SB</div>
+        <div className="w-44 h-44 bg-gradient-to-br from-[#00F2FE]/20 via-[#0072FF]/20 to-[#0A0F1D] rounded-2xl mb-6 shadow-2xl shadow-[#00F2FE]/15 flex items-center justify-center relative group overflow-hidden border border-[#00F2FE]/30">
+          <Activity className="w-20 h-20 text-cyan-400/10 absolute" />
+          <div className="z-10 flex flex-col items-center justify-center">
+            <SyncBeatsIcon size={72} />
+          </div>
           {serverState.status === 'playing' && (
             <motion.div 
-              animate={{ scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] }}
+              animate={{ scale: [1, 1.15, 1], rotate: [0, 5, -5, 0] }}
               transition={{ repeat: Infinity, duration: 2 }}
-              className="absolute inset-0 bg-white/5"
+              className="absolute inset-0 bg-[#00F2FE]/5"
             />
           )}
         </div>
         
-        <h3 className="text-2xl font-black mb-1 tracking-tight">{serverState.currentTrack.title}</h3>
-        <p className="text-zinc-500 text-sm font-medium mb-4 uppercase tracking-widest">{serverState.currentTrack.artist}</p>
+        <h3 className="text-2xl font-black mb-1 tracking-tight text-white uppercase">{serverState.currentTrack.title}</h3>
+        <p className="text-zinc-400 text-xs font-mono font-semibold mb-4 uppercase tracking-widest">{serverState.currentTrack.artist}</p>
 
         {/* Botão de Compartilhar Live */}
         <button
           onClick={() => setIsSharing(true)}
-          className="mb-6 px-3.5 py-1.5 bg-indigo-600/10 hover:bg-indigo-600 border border-indigo-500/20 hover:border-indigo-500 rounded-full text-xs font-bold text-indigo-400 hover:text-white flex items-center gap-1.5 transition-all duration-300 shadow-lg active:scale-95 cursor-pointer"
+          className="mb-6 px-4 py-1.5 bg-[#FF921C]/15 hover:bg-gradient-to-r hover:from-[#FF921C] hover:to-[#ECA427] border border-[#FF921C]/30 hover:border-[#FF921C] rounded-full text-xs font-black uppercase text-[#FF921C] hover:text-black flex items-center gap-1.5 transition-all duration-300 shadow-lg active:scale-95 cursor-pointer"
         >
           <Share2 className="w-3.5 h-3.5" />
           Compartilhar Live 🚀
@@ -422,7 +531,7 @@ function AppView({
         <div className="w-full mb-8">
           <div className="h-2 bg-zinc-800 rounded-full overflow-hidden mb-3 p-0.5">
             <motion.div 
-              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
+              className="h-full bg-gradient-to-r from-[#FF921C] to-[#ECA427] rounded-full"
               style={{ width: `${progressPercent}%` }}
               transition={{ type: 'spring', bounce: 0, duration: 0.1 }}
             />
