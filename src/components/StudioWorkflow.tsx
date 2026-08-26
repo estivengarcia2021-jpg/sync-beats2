@@ -20,6 +20,18 @@ export interface PresetTemplate {
 
 export const PRESET_TEMPLATES: PresetTemplate[] = [
   {
+    id: 'billy-idol-eyes',
+    name: '🎸 Faixa de Teste DJ: Eyes Without a Face',
+    description: 'Billy Idol clássico do New Wave / Synth Pop dos anos 80, com sintetizador aveludado e ritmo sincronizado.',
+    icon: 'Music',
+    track: {
+      id: 'track-billy-idol-1',
+      title: 'EYES WITHOUT A FACE',
+      artist: 'Billy Idol • Rebel Yell (1984)',
+      duration: 298000, // 4:58 mins
+    },
+  },
+  {
     id: 'radio-fm',
     name: '📻 Rádio FM Digital / WebRádio',
     description: 'Transmissão contínua com DJ Host no comando, fila de sugestões e ouvintes interagindo ao vivo.',
