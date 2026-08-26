@@ -3,6 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  role: 'host' | 'listener';
+  joinedAt: number;
+}
+
 export interface RoomState {
   roomId: string;
   hostId: string;

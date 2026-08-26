@@ -8,13 +8,17 @@ import {
   Play, Pause, MessageSquare, Activity, Shield, Users, 
   Clock, Terminal, Heart, Star, Zap, Music, Check, X, AlertCircle,
   Wifi, WifiOff, Sliders, Share2, Copy, ArrowLeft, Radio, HelpCircle, Sparkles, Info,
-  Volume2, VolumeX, Disc, Flame
+  Volume2, VolumeX, Disc, Flame, Mail, LogIn, LogOut, User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HomePage } from './components/HomePage';
 import { StudioWorkflow, PRESET_TEMPLATES, PresetTemplate } from './components/StudioWorkflow';
 import { SyncBeatsLogo, SyncBeatsIcon } from './components/SyncBeatsLogo';
 import { audioEngine } from './services/AudioEngine';
+import { AuthModal } from './components/AuthModal';
+import { UserProfile } from './types';
+import { MUSIC_LIBRARY, LibraryTrack } from './data/musicLibrary';
+import { MusicLibraryModalOrSection } from './components/MusicLibrary';
 
 // --- Tipos e Interfaces ---
 export interface DJTrack {
@@ -121,6 +125,7 @@ const INITIAL_STATE: ServerState = {
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'studio'>('home');
+  const [studioTab, setStudioTab] = useState<'studio' | 'library'>('studio');
   const [activeTemplateId, setActiveTemplateId] = useState<string>('billy-idol-eyes');
   const [serverState, setServerState] = useState<ServerState>(INITIAL_STATE);
   const [logs, setLogs] = useState<string[]>([]);
@@ -128,9 +133,45 @@ export default function App() {
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [audioVolume, setAudioVolume] = useState<number>(0.5);
 
+  // --- Estado de Autenticação de Usuário (Login por E-mail) ---
+  const [authUser, setAuthUser] = useState<UserProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('syncbeats_auth_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [authModalRole, setAuthModalRole] = useState<'host' | 'listener'>('listener');
+  const [authModalTitle, setAuthModalTitle] = useState<string>('Entrar na Sala Sincronizada');
+
   const addLog = useCallback((msg: string) => {
     setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 10));
   }, []);
+
+  const handleOpenLogin = (defaultRole: 'host' | 'listener' = 'listener', actionTitle: string = 'Entrar na Sala Sincronizada') => {
+    setAuthModalRole(defaultRole);
+    setAuthModalTitle(actionTitle);
+    setIsAuthModalOpen(true);
+  };
+
+  const handleLoginSuccess = (user: UserProfile) => {
+    setAuthUser(user);
+    setIsAuthModalOpen(false);
+    addLog(`👤 Usuário autenticado: ${user.name} (${user.email}) como ${user.role === 'host' ? 'Host DJ' : 'Ouvinte'}`);
+    setCurrentView('studio');
+  };
+
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('syncbeats_auth_user');
+    } catch (e) {
+      console.error(e);
+    }
+    setAuthUser(null);
+    addLog('🚪 Sessão encerrada');
+  };
 
   // --- Web Audio Engine Synchronization ---
   useEffect(() => {
@@ -196,6 +237,23 @@ export default function App() {
       startTime: null,
       seekPosition: 0,
     }), `🎛️ Faixa DJ Carregada no Deck: ${track.title} (${track.artist})`);
+  };
+
+  const handleSelectLibraryTrack = (track: LibraryTrack) => {
+    const now = Date.now();
+    updateServer(prev => ({
+      ...prev,
+      currentTrack: {
+        id: track.id,
+        title: track.title.toUpperCase(),
+        artist: `${track.artist}${track.album ? ` • ${track.album}` : ''}${track.year ? ` (${track.year})` : ''}`,
+        duration: track.duration,
+      },
+      status: 'playing',
+      startTime: now,
+      seekPosition: 0,
+    }), `🎵 Faixa da LIB Selecionada: ${track.title} por ${track.artist} (Transmitindo ao vivo)`);
+    setStudioTab('studio');
   };
 
   const handleRunAutoDemo = () => {
@@ -340,35 +398,120 @@ export default function App() {
   }, [serverState, handleHostPlay, handleHostPause]);
 
   if (currentView === 'home') {
-    return <HomePage onOpenStudio={() => setCurrentView('studio')} />;
+    return (
+      <>
+        <HomePage 
+          onOpenStudio={() => setCurrentView('studio')} 
+          onOpenLogin={handleOpenLogin}
+          authUser={authUser}
+          onLogout={handleLogout}
+        />
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+          defaultRole={authModalRole}
+          actionTitle={authModalTitle}
+        />
+      </>
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#080808] text-zinc-100 font-sans selection:bg-[#FF921C]/30">
       {/* Header */}
-      <header className="h-16 border-b border-cyan-900/60 flex items-center justify-between px-6 bg-[#050A15]/95 backdrop-blur-md sticky top-0 z-50">
-        <div className="flex items-center gap-4">
+      <header className="h-16 border-b border-cyan-900/60 flex items-center justify-between px-4 sm:px-6 bg-[#050A15]/95 backdrop-blur-md sticky top-0 z-50">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={() => setCurrentView('home')}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-800/60 text-xs text-cyan-200 font-bold uppercase transition-colors cursor-pointer"
             title="Voltar para Apresentação Comercial"
           >
             <ArrowLeft className="w-4 h-4 text-[#00F2FE]" />
-            <span className="hidden sm:inline">Voltar para Apresentação Comercial</span>
+            <span className="hidden lg:inline">Apresentação Comercial</span>
           </button>
 
           <div className="h-4 w-px bg-cyan-900/60 hidden sm:block" />
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <SyncBeatsLogo size="sm" showBetasBadge={true} onClick={() => setCurrentView('home')} />
-            <span className="hidden md:inline px-2.5 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-500/40 text-[10px] font-mono font-bold text-[#00F2FE] uppercase tracking-widest">
-              STUDIO DJ DECK
-            </span>
+            
+            {/* View Switcher Tabs: Studio vs Library */}
+            <div className="flex items-center bg-[#070D1E] border border-cyan-900/70 rounded-xl p-1">
+              <button
+                onClick={() => setStudioTab('studio')}
+                className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                  studioTab === 'studio'
+                    ? 'bg-gradient-to-r from-[#00F2FE] to-[#0072FF] text-black shadow-sm'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">STUDIO DJ DECK</span>
+                <span className="sm:hidden">DECK</span>
+              </button>
+
+              <button
+                onClick={() => setStudioTab('library')}
+                className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                  studioTab === 'library'
+                    ? 'bg-gradient-to-r from-[#00F2FE] to-[#0072FF] text-black shadow-sm'
+                    : 'text-cyan-300 hover:text-white'
+                }`}
+              >
+                <Disc className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">BIBLIOTECA (LIB)</span>
+                <span className="sm:hidden">LIB</span>
+                <span className="px-1.5 py-0.2 rounded bg-cyan-950 border border-cyan-700/60 text-[9px] font-mono text-[#00F2FE]">
+                  {MUSIC_LIBRARY.length}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Audio Synth & Latency Status Bar */}
-        <div className="flex items-center gap-3">
+        {/* Right Section: User Profile Badge, Audio Synth & Latency */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* User Auth Profile Widget */}
+          {authUser ? (
+            <div className="flex items-center gap-2 bg-[#0A1124] border border-cyan-500/40 rounded-xl px-2.5 py-1 shadow-sm">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#00F2FE] to-[#0072FF] text-black flex items-center justify-center font-black text-[11px]">
+                {authUser.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="hidden sm:block text-left leading-none">
+                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span className="truncate max-w-[100px]">{authUser.name}</span>
+                  <span className={`text-[8px] font-mono font-black px-1.5 py-0.5 rounded border uppercase ${
+                    authUser.role === 'host'
+                      ? 'text-[#00F2FE] bg-[#00F2FE]/15 border-[#00F2FE]/30'
+                      : 'text-cyan-300 bg-cyan-950 border-cyan-700/60'
+                  }`}>
+                    {authUser.role === 'host' ? 'DJ HOST' : 'OUVINTE'}
+                  </span>
+                </div>
+                <div className="text-[9px] font-mono text-cyan-300/70 truncate max-w-[120px] mt-0.5">
+                  {authUser.email}
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-1 hover:bg-cyan-950 text-zinc-400 hover:text-red-400 rounded-lg transition-colors cursor-pointer"
+                title="Sair / Trocar de Conta"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => handleOpenLogin('listener', 'Acessar com E-mail')}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#00F2FE] to-[#0072FF] text-black text-xs font-black uppercase tracking-wider transition-all hover:brightness-110 cursor-pointer shadow-sm shadow-[#00F2FE]/20"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">ENTRAR VIA E-MAIL</span>
+              <span className="sm:hidden">LOGIN</span>
+            </button>
+          )}
+
           {/* Web Audio Synthesizer Control */}
           <div className="hidden sm:flex items-center gap-2 bg-[#0A1124] border border-cyan-500/30 rounded-xl px-3 py-1.5 shadow-sm">
             <button
@@ -396,151 +539,177 @@ export default function App() {
             </span>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-mono text-cyan-400">
-            <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${latency > 300 ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-cyan-500/40 bg-cyan-950/60 text-cyan-200'}`}>
+          <div className="flex items-center gap-2 text-xs font-mono text-cyan-400">
+            <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${latency > 300 ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-cyan-500/40 bg-cyan-950/60 text-cyan-200'}`}>
               {latency > 300 ? <WifiOff className="w-3 h-3 text-red-400" /> : <Wifi className="w-3 h-3 text-[#00F2FE]" />}
-              <span>LATÊNCIA: {latency}ms</span>
+              <span className="text-[11px]">{latency}ms</span>
             </div>
           </div>
         </div>
       </header>
 
       <main className="p-6 max-w-7xl mx-auto space-y-6">
-        {/* DJ Crate: Seletor Rápido de Faixas de Teste */}
-        <div className="bg-[#0A1124] border border-cyan-500/30 rounded-2xl p-5 shadow-xl shadow-cyan-950/20 relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#00F2FE]/20 to-[#0072FF]/20 border border-[#00F2FE]/40 text-[#00F2FE]">
-                <Disc className="w-5 h-5 text-[#00F2FE] animate-spin" style={{ animationDuration: serverState.status === 'playing' ? '3s' : '12s' }} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-black text-sm text-white uppercase tracking-wider">
-                    🎛️ Faixas de Teste DJ (DJ Crate)
-                  </h3>
-                  <span className="px-2 py-0.5 bg-[#00F2FE]/20 text-[#00F2FE] border border-[#00F2FE]/40 text-[9px] font-mono font-bold rounded-full uppercase">
-                    Ao Vivo
-                  </span>
-                </div>
-                <p className="text-xs text-cyan-300/80 font-mono mt-0.5">
-                  Clique em qualquer faixa para carregar no deck com síntese de áudio Web Audio em tempo real
-                </p>
-              </div>
-            </div>
-
-            {/* Audio Synth Status Pill */}
-            <div className="flex items-center gap-2 bg-[#050A15] border border-cyan-500/30 px-3 py-1.5 rounded-full self-start md:self-auto">
-              <div className={`w-2 h-2 rounded-full ${serverState.status === 'playing' ? 'bg-[#00F2FE] animate-ping' : 'bg-zinc-600'}`} />
-              <span className="text-[10px] font-mono font-bold text-cyan-300">
-                {serverState.status === 'playing' ? 'SINTETIZADOR TOCANDO' : 'DECK PAUSADO'}
-              </span>
-              {/* Mini Audio Waves */}
-              {serverState.status === 'playing' && (
-                <div className="flex items-center gap-0.5 h-3 ml-1">
-                  {[40, 80, 60, 100, 50].map((h, i) => (
-                    <motion.div
-                      key={i}
-                      animate={{ height: ['20%', `${h}%`, '30%'] }}
-                      transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
-                      className="w-0.5 bg-[#00F2FE] rounded-full"
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+        {studioTab === 'library' ? (
+          <div className="space-y-6">
+            <MusicLibraryModalOrSection
+              currentTrackId={serverState.currentTrack.id}
+              isPlaying={serverState.status === 'playing'}
+              onSelectTrack={handleSelectLibraryTrack}
+              onTogglePlayPause={serverState.status === 'playing' ? () => handleHostPause(0) : handleHostPlay}
+              userRole={authUser?.role || 'host'}
+            />
           </div>
-
-          {/* Grid de Faixas DJ */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {DJ_TEST_TRACKS.map((track) => {
-              const isCurrent = serverState.currentTrack.title.toUpperCase().includes(track.title) || serverState.currentTrack.id === track.id;
-              const isBillyIdol = track.id === 'track-billy-idol-1';
-
-              return (
-                <button
-                  key={track.id}
-                  onClick={() => handleSelectDJTrack(track)}
-                  className={`p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between cursor-pointer relative group ${
-                    isCurrent
-                      ? 'bg-gradient-to-br from-cyan-950/80 to-[#0072FF]/20 border-[#00F2FE] shadow-lg shadow-[#00F2FE]/15 scale-[1.02]'
-                      : 'bg-[#050A15]/70 hover:bg-[#050A15] border-cyan-900/60 hover:border-cyan-500/50'
-                  }`}
-                >
-                  {isBillyIdol && (
-                    <div className="absolute -top-2 -right-1 bg-gradient-to-r from-[#00F2FE] to-[#0072FF] text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-full shadow-md">
-                      ★ DESTAQUE
-                    </div>
-                  )}
-
+        ) : (
+          <>
+            {/* DJ Crate: Seletor Rápido de Faixas de Teste */}
+            <div className="bg-[#0A1124] border border-cyan-500/30 rounded-2xl p-5 shadow-xl shadow-cyan-950/20 relative overflow-hidden">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#00F2FE]/20 to-[#0072FF]/20 border border-[#00F2FE]/40 text-[#00F2FE]">
+                    <Disc className="w-5 h-5 text-[#00F2FE] animate-spin" style={{ animationDuration: serverState.status === 'playing' ? '3s' : '12s' }} />
+                  </div>
                   <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[9px] font-mono font-bold text-cyan-400 uppercase tracking-wider">
-                        {track.badge}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-black text-sm text-white uppercase tracking-wider">
+                        🎛️ Faixas de Teste DJ (DJ Crate)
+                      </h3>
+                      <span className="px-2 py-0.5 bg-[#00F2FE]/20 text-[#00F2FE] border border-[#00F2FE]/40 text-[9px] font-mono font-bold rounded-full uppercase">
+                        Ao Vivo
                       </span>
-                      {isCurrent && (
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#00F2FE] animate-pulse" />
-                      )}
                     </div>
-                    <div className="font-black text-xs text-white uppercase tracking-tight line-clamp-1 group-hover:text-[#00F2FE] transition-colors">
-                      {track.title}
-                    </div>
-                    <div className="text-[10px] text-cyan-300/70 font-mono mt-0.5 line-clamp-1">
-                      {track.artist}
-                    </div>
+                    <p className="text-xs text-cyan-300/80 font-mono mt-0.5">
+                      Clique em qualquer faixa para carregar no deck com síntese de áudio Web Audio em tempo real
+                    </p>
                   </div>
+                </div>
 
-                  <div className="mt-3 pt-2 border-t border-cyan-900/40 flex items-center justify-between text-[9px] font-mono text-zinc-400">
-                    <span>{track.genre}</span>
-                    <span className={`font-bold ${isCurrent ? 'text-[#00F2FE]' : 'text-zinc-500'}`}>
-                      {isCurrent ? 'NO DECK' : 'CARREGAR'}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setStudioTab('library')}
+                    className="px-3 py-1.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 border border-cyan-700/60 text-xs font-black text-[#00F2FE] uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Disc className="w-3.5 h-3.5" />
+                    <span>Ver Todas as {MUSIC_LIBRARY.length} Faixas da LIB</span>
+                  </button>
+
+                  {/* Audio Synth Status Pill */}
+                  <div className="flex items-center gap-2 bg-[#050A15] border border-cyan-500/30 px-3 py-1.5 rounded-full self-start md:self-auto">
+                    <div className={`w-2 h-2 rounded-full ${serverState.status === 'playing' ? 'bg-[#00F2FE] animate-ping' : 'bg-zinc-600'}`} />
+                    <span className="text-[10px] font-mono font-bold text-cyan-300">
+                      {serverState.status === 'playing' ? 'SINTETIZADOR TOCANDO' : 'DECK PAUSADO'}
                     </span>
+                    {/* Mini Audio Waves */}
+                    {serverState.status === 'playing' && (
+                      <div className="flex items-center gap-0.5 h-3 ml-1">
+                        {[40, 80, 60, 100, 50].map((h, i) => (
+                          <motion.div
+                            key={i}
+                            animate={{ height: ['20%', `${h}%`, '30%'] }}
+                            transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
+                            className="w-0.5 bg-[#00F2FE] rounded-full"
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                </div>
+              </div>
 
-        {/* Componente Didático de Guia & Templates */}
-        <StudioWorkflow
-          serverStatus={serverState.status}
-          startTime={serverState.startTime}
-          seekPosition={serverState.seekPosition}
-          latency={latency}
-          activeTemplateId={activeTemplateId}
-          onSelectTemplate={handleSelectTemplate}
-          onRunAutoDemo={handleRunAutoDemo}
-        />
+              {/* Grid de Faixas DJ */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+                {DJ_TEST_TRACKS.map((track) => {
+                  const isCurrent = serverState.currentTrack.title.toUpperCase().includes(track.title) || serverState.currentTrack.id === track.id;
+                  const isBillyIdol = track.id === 'track-billy-idol-1';
 
-        {/* Simulador Lado a Lado (Host x Ouvinte) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Lado do Host */}
-          <AppView 
-            title="Host (Controlador Mestre DJ)" 
-            role="host" 
-            serverState={serverState} 
-            latency={latency}
-            onPlay={handleHostPlay}
-            onPause={handleHostPause}
-            onSendMessage={(txt) => handleSendMessage('Host', txt)}
-            onReaction={handleReaction}
-            onApproveSuggestion={handleApproveSuggestion}
-            onSelectDJTrack={handleSelectDJTrack}
-            icon={<Shield className="w-5 h-5 text-[#00F2FE]" />}
-          />
+                  return (
+                    <button
+                      key={track.id}
+                      onClick={() => handleSelectDJTrack(track)}
+                      className={`p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between cursor-pointer relative group ${
+                        isCurrent
+                          ? 'bg-gradient-to-br from-cyan-950/80 to-[#0072FF]/20 border-[#00F2FE] shadow-lg shadow-[#00F2FE]/15 scale-[1.02]'
+                          : 'bg-[#050A15]/70 hover:bg-[#050A15] border-cyan-900/60 hover:border-cyan-500/50'
+                      }`}
+                    >
+                      {isBillyIdol && (
+                        <div className="absolute -top-2 -right-1 bg-gradient-to-r from-[#00F2FE] to-[#0072FF] text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-full shadow-md">
+                          ★ DESTAQUE
+                        </div>
+                      )}
 
-          {/* Lado do Ouvinte */}
-          <AppView 
-            title="Ouvinte (Nó Sincronizado)" 
-            role="listener" 
-            serverState={serverState} 
-            latency={latency}
-            onSendMessage={(txt) => handleSendMessage('Ouvinte', txt)}
-            onReaction={handleReaction}
-            onSuggest={handleSuggest}
-            icon={<Users className="w-5 h-5 text-cyan-400" />}
-          />
-        </div>
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[9px] font-mono font-bold text-cyan-400 uppercase tracking-wider">
+                            {track.badge}
+                          </span>
+                          {isCurrent && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#00F2FE] animate-pulse" />
+                          )}
+                        </div>
+                        <div className="font-black text-xs text-white uppercase tracking-tight line-clamp-1 group-hover:text-[#00F2FE] transition-colors">
+                          {track.title}
+                        </div>
+                        <div className="text-[10px] text-cyan-300/70 font-mono mt-0.5 line-clamp-1">
+                          {track.artist}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-cyan-900/40 flex items-center justify-between text-[9px] font-mono text-zinc-400">
+                        <span>{track.genre}</span>
+                        <span className={`font-bold ${isCurrent ? 'text-[#00F2FE]' : 'text-zinc-500'}`}>
+                          {isCurrent ? 'NO DECK' : 'CARREGAR'}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Componente Didático de Guia & Templates */}
+            <StudioWorkflow
+              serverStatus={serverState.status}
+              startTime={serverState.startTime}
+              seekPosition={serverState.seekPosition}
+              latency={latency}
+              activeTemplateId={activeTemplateId}
+              onSelectTemplate={handleSelectTemplate}
+              onRunAutoDemo={handleRunAutoDemo}
+            />
+
+            {/* Simulador Lado a Lado (Host x Ouvinte) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Lado do Host */}
+              <AppView 
+                title="Host (Controlador Mestre DJ)" 
+                role="host" 
+                serverState={serverState} 
+                latency={latency}
+                currentUser={authUser}
+                onPlay={handleHostPlay}
+                onPause={handleHostPause}
+                onSendMessage={(txt) => handleSendMessage(authUser?.role === 'host' ? authUser.name : 'Host_DJ', txt)}
+                onReaction={handleReaction}
+                onApproveSuggestion={handleApproveSuggestion}
+                onSelectDJTrack={handleSelectDJTrack}
+                icon={<Shield className="w-5 h-5 text-[#00F2FE]" />}
+              />
+
+              {/* Lado do Ouvinte */}
+              <AppView 
+                title="Ouvinte (Nó Sincronizado)" 
+                role="listener" 
+                serverState={serverState} 
+                latency={latency}
+                currentUser={authUser}
+                onSendMessage={(txt) => handleSendMessage(authUser?.role === 'listener' ? authUser.name : (authUser ? authUser.name : 'Ouvinte_SP'), txt)}
+                onReaction={handleReaction}
+                onSuggest={handleSuggest}
+                icon={<Users className="w-5 h-5 text-cyan-400" />}
+              />
+            </div>
+          </>
+        )}
       </main>
 
       {/* Debug & Chaos Panel */}
@@ -589,6 +758,15 @@ export default function App() {
         </div>
       </footer>
       <div className="h-48" />
+
+      {/* Auth Modal Global */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+        defaultRole={authModalRole}
+        actionTitle={authModalTitle}
+      />
     </div>
   );
 }
@@ -599,6 +777,7 @@ function AppView({
   role, 
   serverState, 
   latency,
+  currentUser,
   onPlay, 
   onPause, 
   onSendMessage,
@@ -612,6 +791,7 @@ function AppView({
   role: 'host' | 'listener'; 
   serverState: ServerState;
   latency: number;
+  currentUser?: UserProfile | null;
   onPlay?: () => void;
   onPause?: (seek: number) => void;
   onSendMessage: (text: string) => void;
@@ -690,7 +870,9 @@ function AppView({
           <div>
             <span className="font-bold text-sm block leading-none mb-1 text-white uppercase">{title}</span>
             <span className="text-[9px] font-mono text-cyan-400 uppercase tracking-widest">
-              {role === 'host' ? 'Master Controller DJ' : 'Sync Node #42'}
+              {role === 'host' 
+                ? (currentUser?.role === 'host' ? `Host DJ: ${currentUser.name}` : 'Master Controller DJ') 
+                : (currentUser?.role === 'listener' ? `Ouvinte: ${currentUser.name}` : 'Sync Node #42')}
             </span>
           </div>
         </div>
@@ -1034,7 +1216,7 @@ function AppView({
               <button 
                 onClick={() => {
                   if (suggestTitle && suggestArtist) {
-                    onSuggest?.(suggestTitle, suggestArtist, 'Ouvinte_1');
+                    onSuggest?.(suggestTitle, suggestArtist, currentUser?.name || currentUser?.email || 'Ouvinte_1');
                     setIsSuggesting(false);
                     setSuggestTitle('');
                     setSuggestArtist('');
