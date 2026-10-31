@@ -19,6 +19,7 @@ import { AuthModal } from './components/AuthModal';
 import { UserProfile } from './types';
 import { MUSIC_LIBRARY, LibraryTrack } from './data/musicLibrary';
 import { MusicLibraryModalOrSection } from './components/MusicLibrary';
+import { YouTubeMusicView } from './components/YouTubeMusicView';
 
 // --- Tipos e Interfaces ---
 export interface DJTrack {
@@ -124,10 +125,12 @@ const INITIAL_STATE: ServerState = {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'studio'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'studio'>('studio');
+  const [studioMode, setStudioMode] = useState<'youtube-music' | 'technical'>('youtube-music');
   const [studioTab, setStudioTab] = useState<'studio' | 'library'>('studio');
   const [activeTemplateId, setActiveTemplateId] = useState<string>('billy-idol-eyes');
   const [serverState, setServerState] = useState<ServerState>(INITIAL_STATE);
+  const [currentSeekMs, setCurrentSeekMs] = useState<number>(0);
   const [logs, setLogs] = useState<string[]>([]);
   const [latency, setLatency] = useState<number>(50); // Chaos Slider value
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
@@ -200,6 +203,23 @@ export default function App() {
     setAudioVolume(newVol);
     audioEngine.setVolume(newVol);
   };
+
+  // Sincronização do progresso da faixa em tempo real
+  useEffect(() => {
+    let interval: number | null = null;
+    if (serverState.status === 'playing' && serverState.startTime) {
+      interval = window.setInterval(() => {
+        const elapsed = Date.now() - serverState.startTime!;
+        const pos = serverState.seekPosition + elapsed;
+        setCurrentSeekMs(Math.min(pos, serverState.currentTrack.duration));
+      }, 50);
+    } else {
+      setCurrentSeekMs(serverState.seekPosition);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [serverState.status, serverState.startTime, serverState.seekPosition, serverState.currentTrack.duration]);
 
   // --- Lógica de Sincronia com Latência Simulada ---
   const updateServer = useCallback((updater: (prev: ServerState) => ServerState, logMsg?: string) => {
@@ -313,6 +333,15 @@ export default function App() {
     }), `Host: Comando PAUSE enviado (${Math.floor(currentSeek / 1000)}s)`);
   };
 
+  const handleSeek = (positionMs: number) => {
+    const now = Date.now();
+    updateServer(prev => ({
+      ...prev,
+      startTime: prev.status === 'playing' ? now : null,
+      seekPosition: positionMs,
+    }), `Seek para ${Math.floor(positionMs / 1000)}s`);
+  };
+
   const handleSendMessage = (user: string, text: string) => {
     updateServer(prev => ({
       ...prev,
@@ -417,11 +446,58 @@ export default function App() {
     );
   }
 
+  // Visualização Estilo YouTube Music (Limpíssima, sem poluição didática)
+  if (studioMode === 'youtube-music') {
+    return (
+      <>
+        <YouTubeMusicView
+          currentTrack={serverState.currentTrack}
+          isPlaying={serverState.status === 'playing'}
+          onPlay={handleHostPlay}
+          onPause={() => handleHostPause(currentSeekMs)}
+          onSelectTrack={handleSelectLibraryTrack}
+          onSeek={handleSeek}
+          currentSeekMs={currentSeekMs}
+          authUser={authUser}
+          onOpenLogin={() => handleOpenLogin('listener')}
+          onLogout={handleLogout}
+          isAudioMuted={isAudioMuted}
+          audioVolume={audioVolume}
+          onToggleMute={toggleMute}
+          onVolumeChange={handleVolumeChange}
+          messages={serverState.messages}
+          onSendMessage={(txt) => handleSendMessage(authUser?.name || 'Ouvinte', txt)}
+          reactions={serverState.reactions}
+          onReaction={handleReaction}
+          latency={latency}
+          onLatencyChange={setLatency}
+          onSwitchToStudio={() => setStudioMode('technical')}
+        />
+
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+          defaultRole={authModalRole}
+          actionTitle={authModalTitle}
+        />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#080808] text-zinc-100 font-sans selection:bg-[#FF921C]/30">
-      {/* Header */}
+      {/* Header Técnico */}
       <header className="h-16 border-b border-cyan-900/60 flex items-center justify-between px-4 sm:px-6 bg-[#050A15]/95 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            onClick={() => setStudioMode('youtube-music')}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF0000] text-white text-xs font-bold uppercase transition-all hover:brightness-110 cursor-pointer shadow-sm"
+          >
+            <Play className="w-3.5 h-3.5 fill-white" />
+            <span>Voltar ao YouTube Music</span>
+          </button>
+
           <button
             onClick={() => setCurrentView('home')}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-800/60 text-xs text-cyan-200 font-bold uppercase transition-colors cursor-pointer"

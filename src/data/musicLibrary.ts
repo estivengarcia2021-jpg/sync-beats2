@@ -9,6 +9,7 @@ export interface LibraryTrack {
   bpm?: number;
   key?: string;
   coverGradient: string;
+  coverImage?: string;
   accentColor: string;
   description: string;
   badge?: string;
@@ -28,6 +29,7 @@ export const MUSIC_LIBRARY: LibraryTrack[] = [
     bpm: 86,
     key: 'E Major',
     coverGradient: 'from-blue-600 via-indigo-900 to-black',
+    coverImage: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=400&auto=format&fit=crop&q=80',
     accentColor: '#00F2FE',
     description: 'O clássico atemporal com guitarras chorus etéreas, sintetizadores aveludados e baixo oitentista marcante.',
     badge: 'DESTAQUE DOS ANOS 80',
@@ -45,6 +47,7 @@ export const MUSIC_LIBRARY: LibraryTrack[] = [
     bpm: 125,
     key: 'C Minor',
     coverGradient: 'from-cyan-700 via-slate-900 to-black',
+    coverImage: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&auto=format&fit=crop&q=80',
     accentColor: '#00F2FE',
     description: 'Riff icônico de sintetizador analógico e batidas pulsantes que definiram a era de ouro do synthpop britânico.',
     badge: 'CLÁSSICO SYNTH',
@@ -62,6 +65,7 @@ export const MUSIC_LIBRARY: LibraryTrack[] = [
     bpm: 105,
     key: 'B Minor',
     coverGradient: 'from-fuchsia-600 via-indigo-950 to-black',
+    coverImage: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&auto=format&fit=crop&q=80',
     accentColor: '#D946EF',
     description: 'Arpeggios nostálgicos de sintetizador, camadas épicas e solo de saxofone no clímax eletrônico.',
     badge: 'INDIE HINO',
@@ -79,6 +83,7 @@ export const MUSIC_LIBRARY: LibraryTrack[] = [
     bpm: 171,
     key: 'F Minor',
     coverGradient: 'from-red-600 via-rose-950 to-black',
+    coverImage: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=400&auto=format&fit=crop&q=80',
     accentColor: '#F43F5E',
     description: 'Batida acelerada de bateria eletrônica 80s com sintetizadores futuristas e vocais energéticos.',
     badge: 'POP RETRÔ',
@@ -96,6 +101,7 @@ export const MUSIC_LIBRARY: LibraryTrack[] = [
     bpm: 78,
     key: 'Ab Major',
     coverGradient: 'from-amber-700 via-stone-900 to-black',
+    coverImage: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=400&auto=format&fit=crop&q=80',
     accentColor: '#F59E0B',
     description: 'Acordes de piano elétrico Rhodes com ruído de vinil suave, batida jazzy preguiçosa e ambiência de chuva.',
     badge: 'CHILL & FOCUS',
@@ -113,6 +119,7 @@ export const MUSIC_LIBRARY: LibraryTrack[] = [
     bpm: 128,
     key: 'G Minor',
     coverGradient: 'from-cyan-500 via-blue-950 to-black',
+    coverImage: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=400&auto=format&fit=crop&q=80',
     accentColor: '#00F2FE',
     description: 'Grave sub-bass devastador, sintetizadores distorcidos e batida reta para pistas de dança futuristas.',
     badge: 'CLUB BANGER',
@@ -130,6 +137,7 @@ export const MUSIC_LIBRARY: LibraryTrack[] = [
     bpm: 122,
     key: 'D Minor',
     coverGradient: 'from-teal-600 via-emerald-950 to-black',
+    coverImage: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400&auto=format&fit=crop&q=80',
     accentColor: '#10B981',
     description: 'Linhas de baixo quentes, plucks melódicos e percussões orgânicas perfeitas para festas ao entardecer.',
     badge: 'SUNSET VIBE',
@@ -147,6 +155,7 @@ export const MUSIC_LIBRARY: LibraryTrack[] = [
     bpm: 90,
     key: 'C Major',
     coverGradient: 'from-purple-800 via-indigo-950 to-black',
+    coverImage: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=400&auto=format&fit=crop&q=80',
     accentColor: '#8B5CF6',
     description: 'Discussão imersiva com trilha sonora adaptativa sobre latência zero, Web Audio API e streaming social.',
     badge: 'TALK & TECH',
