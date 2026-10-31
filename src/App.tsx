@@ -125,8 +125,7 @@ const INITIAL_STATE: ServerState = {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<'home' | 'studio'>('studio');
-  const [studioMode, setStudioMode] = useState<'youtube-music' | 'technical'>('youtube-music');
+  const [currentView, setCurrentView] = useState<'home' | 'studio'>('home');
   const [studioTab, setStudioTab] = useState<'studio' | 'library'>('studio');
   const [activeTemplateId, setActiveTemplateId] = useState<string>('billy-idol-eyes');
   const [serverState, setServerState] = useState<ServerState>(INITIAL_STATE);
@@ -446,58 +445,11 @@ export default function App() {
     );
   }
 
-  // Visualização Estilo YouTube Music (Limpíssima, sem poluição didática)
-  if (studioMode === 'youtube-music') {
-    return (
-      <>
-        <YouTubeMusicView
-          currentTrack={serverState.currentTrack}
-          isPlaying={serverState.status === 'playing'}
-          onPlay={handleHostPlay}
-          onPause={() => handleHostPause(currentSeekMs)}
-          onSelectTrack={handleSelectLibraryTrack}
-          onSeek={handleSeek}
-          currentSeekMs={currentSeekMs}
-          authUser={authUser}
-          onOpenLogin={() => handleOpenLogin('listener')}
-          onLogout={handleLogout}
-          isAudioMuted={isAudioMuted}
-          audioVolume={audioVolume}
-          onToggleMute={toggleMute}
-          onVolumeChange={handleVolumeChange}
-          messages={serverState.messages}
-          onSendMessage={(txt) => handleSendMessage(authUser?.name || 'Ouvinte', txt)}
-          reactions={serverState.reactions}
-          onReaction={handleReaction}
-          latency={latency}
-          onLatencyChange={setLatency}
-          onSwitchToStudio={() => setStudioMode('technical')}
-        />
-
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
-          onLoginSuccess={handleLoginSuccess}
-          defaultRole={authModalRole}
-          actionTitle={authModalTitle}
-        />
-      </>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-[#080808] text-zinc-100 font-sans selection:bg-[#FF921C]/30">
-      {/* Header Técnico */}
+    <div className="min-h-screen bg-[#050A15] text-zinc-100 font-sans selection:bg-[#00F2FE]/30">
+      {/* Header Original Sync Beats */}
       <header className="h-16 border-b border-cyan-900/60 flex items-center justify-between px-4 sm:px-6 bg-[#050A15]/95 backdrop-blur-md sticky top-0 z-50">
         <div className="flex items-center gap-3 sm:gap-4">
-          <button
-            onClick={() => setStudioMode('youtube-music')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FF0000] text-white text-xs font-bold uppercase transition-all hover:brightness-110 cursor-pointer shadow-sm"
-          >
-            <Play className="w-3.5 h-3.5 fill-white" />
-            <span>Voltar ao YouTube Music</span>
-          </button>
-
           <button
             onClick={() => setCurrentView('home')}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/80 border border-cyan-800/60 text-xs text-cyan-200 font-bold uppercase transition-colors cursor-pointer"
@@ -637,122 +589,6 @@ export default function App() {
           </div>
         ) : (
           <>
-            {/* DJ Crate: Seletor Rápido de Faixas de Teste */}
-            <div className="bg-[#0A1124] border border-cyan-500/30 rounded-2xl p-5 shadow-xl shadow-cyan-950/20 relative overflow-hidden">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#00F2FE]/20 to-[#0072FF]/20 border border-[#00F2FE]/40 text-[#00F2FE]">
-                    <Disc className="w-5 h-5 text-[#00F2FE] animate-spin" style={{ animationDuration: serverState.status === 'playing' ? '3s' : '12s' }} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-black text-sm text-white uppercase tracking-wider">
-                        🎛️ Faixas de Teste DJ (DJ Crate)
-                      </h3>
-                      <span className="px-2 py-0.5 bg-[#00F2FE]/20 text-[#00F2FE] border border-[#00F2FE]/40 text-[9px] font-mono font-bold rounded-full uppercase">
-                        Ao Vivo
-                      </span>
-                    </div>
-                    <p className="text-xs text-cyan-300/80 font-mono mt-0.5">
-                      Clique em qualquer faixa para carregar no deck com síntese de áudio Web Audio em tempo real
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setStudioTab('library')}
-                    className="px-3 py-1.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 border border-cyan-700/60 text-xs font-black text-[#00F2FE] uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-colors"
-                  >
-                    <Disc className="w-3.5 h-3.5" />
-                    <span>Ver Todas as {MUSIC_LIBRARY.length} Faixas da LIB</span>
-                  </button>
-
-                  {/* Audio Synth Status Pill */}
-                  <div className="flex items-center gap-2 bg-[#050A15] border border-cyan-500/30 px-3 py-1.5 rounded-full self-start md:self-auto">
-                    <div className={`w-2 h-2 rounded-full ${serverState.status === 'playing' ? 'bg-[#00F2FE] animate-ping' : 'bg-zinc-600'}`} />
-                    <span className="text-[10px] font-mono font-bold text-cyan-300">
-                      {serverState.status === 'playing' ? 'SINTETIZADOR TOCANDO' : 'DECK PAUSADO'}
-                    </span>
-                    {/* Mini Audio Waves */}
-                    {serverState.status === 'playing' && (
-                      <div className="flex items-center gap-0.5 h-3 ml-1">
-                        {[40, 80, 60, 100, 50].map((h, i) => (
-                          <motion.div
-                            key={i}
-                            animate={{ height: ['20%', `${h}%`, '30%'] }}
-                            transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }}
-                            className="w-0.5 bg-[#00F2FE] rounded-full"
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Grid de Faixas DJ */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-                {DJ_TEST_TRACKS.map((track) => {
-                  const isCurrent = serverState.currentTrack.title.toUpperCase().includes(track.title) || serverState.currentTrack.id === track.id;
-                  const isBillyIdol = track.id === 'track-billy-idol-1';
-
-                  return (
-                    <button
-                      key={track.id}
-                      onClick={() => handleSelectDJTrack(track)}
-                      className={`p-3 rounded-xl border text-left transition-all duration-200 flex flex-col justify-between cursor-pointer relative group ${
-                        isCurrent
-                          ? 'bg-gradient-to-br from-cyan-950/80 to-[#0072FF]/20 border-[#00F2FE] shadow-lg shadow-[#00F2FE]/15 scale-[1.02]'
-                          : 'bg-[#050A15]/70 hover:bg-[#050A15] border-cyan-900/60 hover:border-cyan-500/50'
-                      }`}
-                    >
-                      {isBillyIdol && (
-                        <div className="absolute -top-2 -right-1 bg-gradient-to-r from-[#00F2FE] to-[#0072FF] text-black text-[8px] font-black uppercase px-2 py-0.5 rounded-full shadow-md">
-                          ★ DESTAQUE
-                        </div>
-                      )}
-
-                      <div>
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[9px] font-mono font-bold text-cyan-400 uppercase tracking-wider">
-                            {track.badge}
-                          </span>
-                          {isCurrent && (
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#00F2FE] animate-pulse" />
-                          )}
-                        </div>
-                        <div className="font-black text-xs text-white uppercase tracking-tight line-clamp-1 group-hover:text-[#00F2FE] transition-colors">
-                          {track.title}
-                        </div>
-                        <div className="text-[10px] text-cyan-300/70 font-mono mt-0.5 line-clamp-1">
-                          {track.artist}
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-2 border-t border-cyan-900/40 flex items-center justify-between text-[9px] font-mono text-zinc-400">
-                        <span>{track.genre}</span>
-                        <span className={`font-bold ${isCurrent ? 'text-[#00F2FE]' : 'text-zinc-500'}`}>
-                          {isCurrent ? 'NO DECK' : 'CARREGAR'}
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Componente Didático de Guia & Templates */}
-            <StudioWorkflow
-              serverStatus={serverState.status}
-              startTime={serverState.startTime}
-              seekPosition={serverState.seekPosition}
-              latency={latency}
-              activeTemplateId={activeTemplateId}
-              onSelectTemplate={handleSelectTemplate}
-              onRunAutoDemo={handleRunAutoDemo}
-            />
-
             {/* Simulador Lado a Lado (Host x Ouvinte) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Lado do Host */}
