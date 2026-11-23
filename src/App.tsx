@@ -19,6 +19,9 @@ import { AuthModal } from './components/AuthModal';
 import { UserProfile } from './types';
 import { MUSIC_LIBRARY, LibraryTrack } from './data/musicLibrary';
 import { MusicLibraryModalOrSection } from './components/MusicLibrary';
+import { BeatsShowcase } from './components/BeatsShowcase';
+import { TrapetonTrack } from './data/albumTrapeton';
+import YouTubeSyncPlayer from './components/YouTubeSyncPlayer.jsx';
 
 // --- Tipos e Interfaces ---
 export interface DJTrack {
@@ -125,13 +128,46 @@ const INITIAL_STATE: ServerState = {
 
 export default function App() {
   const [currentView, setCurrentView] = useState<'home' | 'studio'>('home');
-  const [studioTab, setStudioTab] = useState<'studio' | 'library'>('studio');
+  const [studioTab, setStudioTab] = useState<'studio' | 'library' | 'beats' | 'youtube'>('studio');
+  const [youtubeRoomId, setYoutubeRoomId] = useState<string>('syncbeats-live-01');
   const [activeTemplateId, setActiveTemplateId] = useState<string>('billy-idol-eyes');
   const [serverState, setServerState] = useState<ServerState>(INITIAL_STATE);
   const [logs, setLogs] = useState<string[]>([]);
   const [latency, setLatency] = useState<number>(50); // Chaos Slider value
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(false);
   const [audioVolume, setAudioVolume] = useState<number>(0.5);
+
+  // Detector de rota direta para /beats, #beats, /youtube ou #youtube?room=...
+  useEffect(() => {
+    const handleUrlCheck = () => {
+      const path = window.location.pathname.toLowerCase();
+      const rawHash = window.location.hash;
+      const hashLower = rawHash.toLowerCase();
+
+      if (path.includes('youtube') || hashLower.includes('youtube')) {
+        const queryPart = rawHash.includes('?')
+          ? rawHash.slice(rawHash.indexOf('?') + 1)
+          : window.location.search.slice(1);
+        const params = new URLSearchParams(queryPart);
+        const roomParam = params.get('room');
+        if (roomParam && /^[a-zA-Z0-9_-]{2,64}$/.test(roomParam)) {
+          setYoutubeRoomId(roomParam);
+        }
+        setCurrentView('studio');
+        setStudioTab('youtube');
+      } else if (path.includes('beats') || hashLower.includes('beats')) {
+        setCurrentView('studio');
+        setStudioTab('beats');
+      }
+    };
+    handleUrlCheck();
+    window.addEventListener('hashchange', handleUrlCheck);
+    window.addEventListener('popstate', handleUrlCheck);
+    return () => {
+      window.removeEventListener('hashchange', handleUrlCheck);
+      window.removeEventListener('popstate', handleUrlCheck);
+    };
+  }, []);
 
   // --- Estado de Autenticação de Usuário (Login por E-mail) ---
   const [authUser, setAuthUser] = useState<UserProfile | null>(() => {
@@ -254,6 +290,22 @@ export default function App() {
       seekPosition: 0,
     }), `🎵 Faixa da LIB Selecionada: ${track.title} por ${track.artist} (Transmitindo ao vivo)`);
     setStudioTab('studio');
+  };
+
+  const handleLoadTrapetonTrack = (track: TrapetonTrack) => {
+    const now = Date.now();
+    updateServer(prev => ({
+      ...prev,
+      currentTrack: {
+        id: track.id,
+        title: track.title.toUpperCase(),
+        artist: `${track.artist} (${track.bpm} BPM - ${track.key})`,
+        duration: 180000,
+      },
+      status: 'playing',
+      startTime: now,
+      seekPosition: 0,
+    }), `🔥 Faixa do Álbum Oficial Trapeton Master carregada no Deck: ${track.title} [${track.bpm} BPM] - Autoria: DJSyncbeats (Estiven Garcia)`);
   };
 
   const handleRunAutoDemo = () => {
@@ -402,6 +454,14 @@ export default function App() {
       <>
         <HomePage 
           onOpenStudio={() => setCurrentView('studio')} 
+          onOpenBeats={() => {
+            setCurrentView('studio');
+            setStudioTab('beats');
+          }}
+          onOpenYouTube={() => {
+            setCurrentView('studio');
+            setStudioTab('youtube');
+          }}
           onOpenLogin={handleOpenLogin}
           authUser={authUser}
           onLogout={handleLogout}
@@ -436,8 +496,8 @@ export default function App() {
           <div className="flex items-center gap-2 sm:gap-3">
             <SyncBeatsLogo size="sm" showBetasBadge={true} onClick={() => setCurrentView('home')} />
             
-            {/* View Switcher Tabs: Studio vs Library */}
-            <div className="flex items-center bg-[#070D1E] border border-cyan-900/70 rounded-xl p-1">
+            {/* View Switcher Tabs: Studio vs Library vs Beats */}
+            <div className="flex items-center bg-[#070D1E] border border-cyan-900/70 rounded-xl p-1 gap-1">
               <button
                 onClick={() => setStudioTab('studio')}
                 className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
@@ -449,6 +509,35 @@ export default function App() {
                 <Sliders className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">STUDIO DJ DECK</span>
                 <span className="sm:hidden">DECK</span>
+              </button>
+
+              <button
+                onClick={() => setStudioTab('beats')}
+                className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
+                  studioTab === 'beats'
+                    ? 'bg-gradient-to-r from-red-500 via-amber-500 to-[#00F2FE] text-black shadow-sm'
+                    : 'text-red-400 hover:text-red-300'
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">ÁLBUM VOL. 1 (/beats)</span>
+                <span className="sm:hidden">BEATS</span>
+                <span className="px-1.5 py-0.2 rounded bg-black/60 border border-red-500/60 text-[9px] font-mono text-red-300">
+                  NOVO
+                </span>
+              </button>
+
+              <button
+                onClick={() => setStudioTab('youtube')}
+                className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                  studioTab === 'youtube'
+                    ? 'bg-gradient-to-r from-[#00F2FE] to-[#0072FF] text-black shadow-sm'
+                    : 'text-zinc-300 hover:text-white'
+                }`}
+              >
+                <Radio className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">SALA YOUTUBE</span>
+                <span className="sm:hidden">YT SYNC</span>
               </button>
 
               <button
@@ -549,7 +638,27 @@ export default function App() {
       </header>
 
       <main className="p-6 max-w-7xl mx-auto space-y-6">
-        {studioTab === 'library' ? (
+        {studioTab === 'youtube' ? (
+          <div className="space-y-6">
+            <YouTubeSyncPlayer
+              initialRoomId={youtubeRoomId}
+              authUser={authUser}
+              onRequireLogin={() => handleOpenLogin('listener', 'Entrar na Sala YouTube')}
+            />
+          </div>
+        ) : studioTab === 'beats' ? (
+          <div className="space-y-6">
+            <BeatsShowcase
+              currentTrackId={serverState.currentTrack.id}
+              isPlaying={serverState.status === 'playing'}
+              onLoadToDeck={(track) => {
+                handleLoadTrapetonTrack(track);
+                setStudioTab('studio');
+              }}
+              onOpenStudio={() => setStudioTab('studio')}
+            />
+          </div>
+        ) : studioTab === 'library' ? (
           <div className="space-y-6">
             <MusicLibraryModalOrSection
               currentTrackId={serverState.currentTrack.id}

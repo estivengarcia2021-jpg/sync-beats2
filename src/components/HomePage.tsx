@@ -9,15 +9,18 @@ import { motion, AnimatePresence } from 'motion/react';
 import { SyncBeatsLogo } from './SyncBeatsLogo';
 import { UserProfile } from '../types';
 import { MUSIC_LIBRARY } from '../data/musicLibrary';
+import { albumTrapeton2026, ALBUM_METADATA } from '../data/albumTrapeton';
 
 interface HomePageProps {
   onOpenStudio: () => void;
+  onOpenBeats?: () => void;
+  onOpenYouTube?: () => void;
   onOpenLogin: (defaultRole?: 'host' | 'listener', actionTitle?: string) => void;
   authUser: UserProfile | null;
   onLogout: () => void;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ onOpenStudio, onOpenLogin, authUser, onLogout }) => {
+export const HomePage: React.FC<HomePageProps> = ({ onOpenStudio, onOpenBeats, onOpenYouTube, onOpenLogin, authUser, onLogout }) => {
   // Live listener count simulation
   const [listenerCount, setListenerCount] = useState<number>(842);
   useEffect(() => {
@@ -61,15 +64,34 @@ export const HomePage: React.FC<HomePageProps> = ({ onOpenStudio, onOpenLogin, a
         <SyncBeatsLogo showBetasBadge={true} size="md" onClick={() => handleEnterRoom('listener')} />
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-extrabold uppercase tracking-widest text-zinc-400">
-          <a href="#biblioteca" className="hover:text-[#00F2FE] text-cyan-300 transition-colors flex items-center gap-1.5 font-black">
+        <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs font-extrabold uppercase tracking-widest text-zinc-400">
+          <button 
+            onClick={onOpenBeats ? onOpenBeats : () => {
+              const el = document.getElementById('album-trapeton');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="hover:text-red-300 text-red-400 transition-colors flex items-center gap-1.5 font-black cursor-pointer bg-red-950/40 border border-red-500/40 px-2.5 py-1 rounded-lg whitespace-nowrap"
+          >
+            <Flame className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+            <span>ÁLBUM VOL. 1 (/BEATS)</span>
+          </button>
+          {onOpenYouTube && (
+            <button
+              onClick={onOpenYouTube}
+              className="hover:text-[#00F2FE] text-cyan-200 transition-colors flex items-center gap-1.5 font-black cursor-pointer whitespace-nowrap"
+            >
+              <Radio className="w-3.5 h-3.5 text-[#00F2FE]" />
+              <span>SALA YOUTUBE</span>
+            </button>
+          )}
+          <a href="#biblioteca" className="hover:text-[#00F2FE] text-cyan-300 transition-colors flex items-center gap-1.5 font-black whitespace-nowrap">
             <Sparkles className="w-3.5 h-3.5 text-[#00F2FE]" />
             <span>BIBLIOTECA (LIB)</span>
           </a>
-          <a href="#problema" className="hover:text-cyan-300 transition-colors">O PROBLEMA</a>
-          <a href="#solucao" className="hover:text-cyan-300 transition-colors">COMO FUNCIONA</a>
-          <a href="#planos" className="hover:text-cyan-300 transition-colors">PREÇOS</a>
-          <a href="#artistas" className="hover:text-cyan-300 transition-colors">PARA ARTISTAS</a>
+          <a href="#problema" className="hover:text-cyan-300 transition-colors whitespace-nowrap">O PROBLEMA</a>
+          <a href="#solucao" className="hover:text-cyan-300 transition-colors whitespace-nowrap">COMO FUNCIONA</a>
+          <a href="#planos" className="hover:text-cyan-300 transition-colors whitespace-nowrap">PREÇOS</a>
+          <a href="#artistas" className="hover:text-cyan-300 transition-colors whitespace-nowrap">PARA ARTISTAS</a>
         </nav>
 
         {/* Right CTA / Auth Status */}
@@ -231,6 +253,117 @@ export const HomePage: React.FC<HomePageProps> = ({ onOpenStudio, onOpenLogin, a
             </motion.div>
           </div>
 
+        </div>
+      </section>
+
+      {/* SECTION: NOVO ÁLBUM OFICIAL (TRAPETON MASTER VOL. 1) */}
+      <section id="album-trapeton" className="py-20 bg-gradient-to-b from-[#091124] to-[#060D1E] border-t border-cyan-800/70 px-6 lg:px-16 relative overflow-hidden">
+        <div className="absolute top-0 right-10 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-96 h-96 bg-[#00F2FE]/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto relative z-10 space-y-10">
+          {/* Header do Álbum */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-cyan-900/60 pb-8">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap mb-2">
+                <span className="text-xs font-mono font-black text-red-400 bg-red-950/60 border border-red-500/40 px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1.5">
+                  <Flame className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                  LANÇAMENTO OFICIAL 2026
+                </span>
+                <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5 text-emerald-400" />
+                  AUTORIA DJSyncbeats • DIREITOS RESERVADOS
+                </span>
+              </div>
+
+              <h2 className="text-3xl sm:text-5xl font-black text-white uppercase tracking-tight">
+                {ALBUM_METADATA.title}: {ALBUM_METADATA.subtitle}
+              </h2>
+              <p className="text-zinc-300 text-sm sm:text-base mt-3 max-w-3xl leading-relaxed">
+                A fusão de peso e cadência do <strong className="text-white">Rap Americano (808s Travis Scott / Kendrick Lamar)</strong> com o suingue envolvente do <strong className="text-[#00F2FE]">Reggaeton Urbano (Bad Bunny & Feid)</strong>. 
+                Produzido e composto por <strong className="text-white">DJSyncbeats (Estiven Garcia)</strong> com todos os direitos autorais e patrimoniais reservados.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 self-start md:self-auto flex-shrink-0">
+              {onOpenBeats && (
+                <button
+                  onClick={onOpenBeats}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-red-500 via-amber-500 to-[#00F2FE] hover:brightness-110 text-black font-black text-xs uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-lg shadow-red-500/20"
+                >
+                  <Disc className="w-4 h-4" />
+                  <span>ABRIR PLAYER /BEATS</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Cards das 4 Faixas do Álbum */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {albumTrapeton2026.map((track, idx) => (
+              <motion.div
+                key={track.id}
+                whileHover={{ y: -4 }}
+                className="bg-[#0A1329] border border-cyan-800/70 hover:border-[#00F2FE] rounded-2xl p-5 flex flex-col justify-between group transition-all cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-[#00F2FE]/15"
+                onClick={onOpenBeats ? onOpenBeats : () => handleEnterRoom('listener', `Escutar ${track.title}`)}
+              >
+                <div>
+                  <div className={`h-36 rounded-xl bg-gradient-to-br ${track.coverGradient} border border-cyan-500/30 p-4 flex flex-col justify-between relative overflow-hidden mb-4 group-hover:border-[#00F2FE]/60 transition-colors`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-mono font-black px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md text-white border border-white/20 uppercase">
+                        0{idx + 1} • {track.category}
+                      </span>
+                      <span className="text-[8px] font-mono font-black px-2 py-0.5 rounded bg-black text-[#00F2FE] border border-[#00F2FE]/40 uppercase">
+                        {track.tag}
+                      </span>
+                    </div>
+
+                    <div className="w-11 h-11 rounded-full bg-black/60 backdrop-blur-sm border border-cyan-400/50 flex items-center justify-center self-center group-hover:scale-110 group-hover:bg-[#00F2FE] group-hover:text-black text-white transition-all shadow-xl">
+                      <Play className="w-5 h-5 fill-current ml-0.5" />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] font-mono text-zinc-200">
+                      <span className="text-[#00F2FE] font-bold">{track.bpm} BPM</span>
+                      <span className="text-amber-300 font-bold">{track.key}</span>
+                      <span>{track.duration}</span>
+                    </div>
+                  </div>
+
+                  <h3 className="font-black text-base text-white uppercase tracking-tight group-hover:text-[#00F2FE] transition-colors truncate">
+                    {track.title}
+                  </h3>
+                  <div className="text-xs text-cyan-300 font-mono mt-0.5">
+                    {track.artist}
+                  </div>
+                  <p className="text-[11px] text-zinc-300 mt-2 line-clamp-2 leading-relaxed bg-[#050A16] p-2 rounded-lg border border-cyan-950">
+                    {track.description}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-cyan-900/50 flex items-center justify-between">
+                  <span className="text-[10px] font-mono text-zinc-400 uppercase">
+                    {track.genre}
+                  </span>
+                  <span className="text-xs font-black text-[#00F2FE] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                    <span>Ouvir Beat</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Autoria e Copyright Footer Notice do Álbum */}
+          <div className="rounded-xl bg-[#040816] border border-cyan-800/70 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-zinc-300">
+            <div className="flex items-center gap-2 text-emerald-400">
+              <Shield className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span><strong>Aviso Legal de Autoria:</strong> Álbum de autoria exclusiva de DJSyncbeats (Estiven Garcia). Todos os direitos reservados.</span>
+            </div>
+            <div className="text-cyan-300 font-bold text-[11px]">
+              Sync Beats Records 2026
+            </div>
+          </div>
         </div>
       </section>
 

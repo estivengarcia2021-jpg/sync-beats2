@@ -2,6 +2,7 @@ export interface LibraryTrack {
   id: string;
   title: string;
   artist: string;
+  author?: string;
   album?: string;
   year?: number;
   duration: number; // in milliseconds
@@ -12,11 +13,95 @@ export interface LibraryTrack {
   accentColor: string;
   description: string;
   badge?: string;
-  vibe: '80s Classic' | 'Electro Pop' | 'Synthwave' | 'Lo-Fi Chill' | 'Deep House' | 'Cyberpunk' | 'Podcast';
-  audioStyle: 'billy_idol' | 'synthwave' | 'lofi' | 'deephouse' | 'cyberpunk' | 'pop';
+  vibe: '80s Classic' | 'Electro Pop' | 'Synthwave' | 'Lo-Fi Chill' | 'Deep House' | 'Cyberpunk' | 'Podcast' | 'Trapeton' | 'Club Banger' | 'Dark Rap' | 'Melodic';
+  audioStyle: 'billy_idol' | 'synthwave' | 'lofi' | 'deephouse' | 'cyberpunk' | 'pop' | 'trapeton_dark' | 'trapeton_miami' | 'trapeton_club' | 'trapeton_melodic';
+  tag?: string;
+  copyright?: string;
 }
 
 export const MUSIC_LIBRARY: LibraryTrack[] = [
+  // --- ÁLBUM NOVO OFICIAL: DJSyncbeats Vol. 1 (TRAPETON MASTER VOL. 1) ---
+  {
+    id: 'track-01',
+    title: 'FUEGO & 808S (INTRO)',
+    artist: 'DJSyncbeats',
+    author: 'DJSyncbeats (Estiven Garcia)',
+    album: 'TRAPETON MASTER VOL. 1',
+    year: 2026,
+    bpm: 90,
+    key: 'Dó menor (Cm)',
+    duration: 165000, // 2:45
+    genre: 'Dark Trapeton / Rap US + Dembow',
+    coverGradient: 'from-amber-600 via-red-950 to-black',
+    accentColor: '#EF4444',
+    badge: '★ ÁLBUM NOVO VOL. 1',
+    tag: 'INÍCIO DA SESSÃO',
+    vibe: 'Dark Rap',
+    audioStyle: 'trapeton_dark',
+    description: 'Sintetizadores obscuros estilo Travis Scott fundidos com o peso de um dembow acelerado e sub-808s marcantes.',
+    copyright: '© 2026 DJSyncbeats (Estiven Garcia). Todos os direitos reservados.'
+  },
+  {
+    id: 'track-02',
+    title: 'NOCHE EN MIAMI',
+    artist: 'DJSyncbeats',
+    author: 'DJSyncbeats (Estiven Garcia)',
+    album: 'TRAPETON MASTER VOL. 1',
+    year: 2026,
+    bpm: 96,
+    key: 'Lá menor (Am)',
+    duration: 195000, // 3:15
+    genre: 'Commercial Trapeton / Flow US',
+    coverGradient: 'from-cyan-500 via-blue-950 to-black',
+    accentColor: '#00F2FE',
+    badge: '★ SINGLE PRINCIPAL',
+    tag: 'SINGLE PRINCIPAL',
+    vibe: 'Trapeton',
+    audioStyle: 'trapeton_miami',
+    description: 'Melodia marcante de sintetizador/pluck no refrão, aliada ao flow rápido do Rap Americano e percussão latina.',
+    copyright: '© 2026 DJSyncbeats (Estiven Garcia). Todos os direitos reservados.'
+  },
+  {
+    id: 'track-03',
+    title: 'SIN FRENO',
+    artist: 'DJSyncbeats',
+    author: 'DJSyncbeats (Estiven Garcia)',
+    album: 'TRAPETON MASTER VOL. 1',
+    year: 2026,
+    bpm: 100,
+    key: 'Fá menor (Fm)',
+    duration: 178000, // 2:58
+    genre: 'Club Banger / Perreo Duro',
+    coverGradient: 'from-fuchsia-600 via-purple-950 to-black',
+    accentColor: '#D946EF',
+    badge: '★ PERREO HEAVY',
+    tag: 'PERREO HEAVY',
+    vibe: 'Club Banger',
+    audioStyle: 'trapeton_club',
+    description: 'Agressividade do Trap com ritmo contagiante de Reggaeton para abanar as pistas de dança.',
+    copyright: '© 2026 DJSyncbeats (Estiven Garcia). Todos os direitos reservados.'
+  },
+  {
+    id: 'track-04',
+    title: 'SOMBRA & LUZ',
+    artist: 'DJSyncbeats',
+    author: 'DJSyncbeats (Estiven Garcia)',
+    album: 'TRAPETON MASTER VOL. 1',
+    year: 2026,
+    bpm: 92,
+    key: 'Sol menor (Gm)',
+    duration: 210000, // 3:30
+    genre: 'Melodic Chill Rap / Reggaeton Latino',
+    coverGradient: 'from-emerald-600 via-teal-950 to-black',
+    accentColor: '#10B981',
+    badge: '★ MID-TEMPO VIBE',
+    tag: 'MID-TEMPO VIBE',
+    vibe: 'Melodic',
+    audioStyle: 'trapeton_melodic',
+    description: 'Pianos sutis, vocais recortados e uma atmosfera noturna que une R&B com o balanço urbano.',
+    copyright: '© 2026 DJSyncbeats (Estiven Garcia). Todos os direitos reservados.'
+  },
+  // --- CLÁSSICOS E OUTROS GÊNEROS ---
   {
     id: 'track-billy-idol-1',
     title: 'Eyes Without a Face',
